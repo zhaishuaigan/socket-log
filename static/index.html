@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>测试</title>
+    <style>
+        * {
+            margin: 0px;
+            padding: 0px;
+            font-size: 12px;
+            line-height: 20px;
+        }
+
+        body {
+            color: #333;
+        }
+
+        #app {
+            margin: 50px auto;
+            max-width: 80%;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border: 1px solid #333;
+        }
+
+        td, th {
+            border: 1px solid #333;
+            padding: 0px 10px;
+            overflow: hidden;
+            word-break: break-all;
+        }
+
+        .time {
+            width: 150px;
+        }
+
+        .type {
+            width: 50px;
+        }
+
+        .info {
+            color: #666;
+        }
+
+        .sql {
+            color: #666;
+        }
+
+        .error {
+            color: #F00;
+        }
+    </style>
+</head>
+
+<body>
+<div id="app">
+    <table>
+        <tr>
+            <th class="time">时间</th>
+            <th class="type">类型</th>
+            <th class="log">日志</th>
+        </tr>
+        <tr v-for="item in list" :class="item.type">
+            <td v-html="item.time"></td>
+            <td v-text="item.type"></td>
+            <td v-html="item.log"></td>
+        </tr>
+    </table>
+</div>
+<script src="/vue.js"></script>
+<script src="/socket.io.js"></script>
+<script>
+
+    var app = new Vue({
+        el     : '#app',
+        data   : function () {
+            return {
+                status: 0,
+                max   : 100,
+                list  : []
+            }
+        },
+        created: function () {
+            var that   = this;
+            var socket = io('http://localhost:88');
+            socket.on('connect', function () {
+                console.log('链接成功..');
+
+            });
+
+            socket.on('disconnect', function () {
+                console.log('链接已断开..');
+
+            });
+            socket.on('write', function (data) {
+                console.log('data: ', data);
+                that.add('', '----------------------------------------');
+                for (var i in data) {
+                    for (var j in data[i]) {
+                        that.add(i, data[i][j]);
+                    }
+
+                }
+            });
+        },
+        methods: {
+            add: function (type, log) {
+                var time = new Date();
+                this.list.unshift({
+                    time: time.getFullYear() + '-' + (time.getMonth() + 1) + '-' + time.getDate() + ' ' + time.getHours() + ':' + time.getMinutes() + ':' + time.getSeconds(),
+                    type: type,
+                    log : log.replace(/\n/g, '<br/>').replace(/\s/g, '&nbsp;&nbsp;')
+                });
+
+                if (this.list.length > this.max) {
+                    this.list.pop();
+                }
+            }
+        }
+    });
+
+</script>
+</body>
+
+</html>
