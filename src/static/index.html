@@ -5,13 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>测试</title>
+    <title>远程日志分析</title>
     <style>
-        * {
+        html, body {
             margin: 0px;
             padding: 0px;
+
+        }
+
+        * {
             font-size: 12px;
-            line-height: 20px;
         }
 
         body {
@@ -22,6 +25,15 @@
             margin: 50px auto;
             max-width: 80%;
             overflow: hidden;
+        }
+
+        .filter {
+            padding: 10px 10px;
+            text-align: center;
+        }
+
+        .input-max {
+            width: 50px;
         }
 
         table {
@@ -60,13 +72,27 @@
 
 <body>
 <div id="app">
+    <div class="filter">
+        搜索:
+        <select name="type" v-model="filter.type">
+            <option value="">all</option>
+            <option value="sql">sql</option>
+            <option value="error">error</option>
+            <option value="info">info</option>
+        </select>
+        <input type="text" v-model="filter.search">
+        <label for="request"><input type="checkbox" name="request" v-model="request" id="request">接收数据</label>
+        <span>|</span>
+        缓存条数:
+        <input type="text" class="input-max" v-model="max">
+    </div>
     <table>
         <tr>
             <th class="time">时间</th>
             <th class="type">类型</th>
-            <th class="log">日志</th>
+            <th class="log">日志 ({{filterList.length}})</th>
         </tr>
-        <tr v-for="item in list" :class="item.type">
+        <tr v-for="item in filterList" :class="item.type">
             <td v-html="item.time"></td>
             <td v-text="item.type"></td>
             <td v-html="item.log"></td>
@@ -78,28 +104,57 @@
 <script>
 
     var app = new Vue({
-        el     : '#app',
-        data   : function () {
+        el      : '#app',
+        data    : function () {
             return {
-                status: 0,
-                max   : 100,
-                list  : []
+                status : 0,
+                max    : 100,
+                list   : [],
+                request: true,
+                filter : {
+                    type  : '',
+                    search: '',
+                }
             }
         },
-        created: function () {
+        computed: {
+            filterList: function () {
+                var filter = this.filter;
+                var list   = this.list;
+                var result = [];
+
+                if (this.request) {
+                    return list;
+                }
+                for (var i in list) {
+                    var item = list[i];
+                    switch (true) {
+                        case
+                        (filter.type ? filter.type.indexOf(item.type) != -1 : true)
+                        &&
+                        (filter.search ? item.log.indexOf(filter.search) != -1 : true)
+                        :
+                            result.push(list[i]);
+                            break;
+                    }
+                }
+                return result;
+            }
+        },
+        created : function () {
             var that   = this;
-            var socket = io('http://localhost:88');
+            var socket = io('/');
             socket.on('connect', function () {
-                console.log('链接成功..');
+                console.log('链接成功...');
 
             });
 
             socket.on('disconnect', function () {
-                console.log('链接已断开..');
+                console.log('链接已断开...');
 
             });
             socket.on('write', function (data) {
-                console.log('data: ', data);
+                // console.log('data: ', data);
                 that.add('', '----------------------------------------');
                 for (var i in data) {
                     for (var j in data[i]) {
@@ -109,8 +164,11 @@
                 }
             });
         },
-        methods: {
+        methods : {
             add: function (type, log) {
+                if (!this.request) {
+                    return;
+                }
                 var time = new Date();
                 this.list.unshift({
                     time: time.getFullYear() + '-' + (time.getMonth() + 1) + '-' + time.getDate() + ' ' + time.getHours() + ':' + time.getMinutes() + ':' + time.getSeconds(),
