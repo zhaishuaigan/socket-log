@@ -3,7 +3,7 @@ var app  = http.createServer(handler)
 var io   = require('socket.io')(app);
 var api  = require('./api.js');
 
-app.listen(88);
+app.listen(80);
 
 var sockets = {};
 
